@@ -240,6 +240,8 @@ plt.legend()
 
 # %%
 #nationality by avg age
+import seaborn as sns
+sns.set()
 
 
 # %%
