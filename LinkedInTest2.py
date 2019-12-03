@@ -242,6 +242,6 @@ plt.legend()
 #nationality by avg age
 import seaborn as sns
 sns.set()
-
+avgage = sns.barplot(x="age", y="nationality", hue="gender", data=avg_age)
 
 # %%
