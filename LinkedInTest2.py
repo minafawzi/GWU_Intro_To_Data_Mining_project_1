@@ -222,3 +222,24 @@ plotPerColumnDistribution(dfOriginalData, 10, 5)
 #more male than female.  # heavily celtic english
 
 # %%
+#avg age for the ethnic groups
+#nunique - sum values per Gender and Type groups
+avg_age = dfOriginalData.groupby(['gender','nationality'],as_index = False).agg({'age': 'mean'})
+print (avg_age)
+
+# %%
+#gender by Nationality
+figure = plt.figure(figsize=(15,8))
+plt.hist([dfOriginalData[dfOriginalData['gender']=='Female']['nationality'], dfOriginalData[dfOriginalData['gender']=='Male']['nationality']], stacked=True, bins=30, label=['Female','Male'])
+plt.xlabel('Nationality')
+plt.ylabel('Count')
+plt.legend()
+
+
+
+
+# %%
+#nationality by avg age
+
+
+# %%
