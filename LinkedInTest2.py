@@ -5,7 +5,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-filePath = "C:\\Users\\malakm\\Documents\\Gwu\\DataMining Intro\\Project 1\\LinkedIn_Data.csv"
+filePath = "C:\\Users\\HP ELITEBOOK\\Documents\\dataming\\GWU_Intro_To_Data_Mining_project_1\\Linkedin_Data.csv"
 dfOriginalData = pd.read_csv(filePath,encoding='latin1')
 dfOriginalData.shape
 
@@ -21,6 +21,7 @@ dfOriginalData.drop(["beauty","beauty_female","beauty_male","blur","blur_gaussia
 dfOriginalData.shape
 
 dfOriginalData.to_csv("DataWODupCol.csv")
+
 #%%
 
 from linkedin_api import Linkedin
@@ -31,10 +32,11 @@ results = linkedin.get_company('TT-Games-Ltd')
 #print(temp)
 print(results["companyIndustries"])
 
-for x in dfOriginalData.shape[0]
+#for x in dfOriginalData.shape[0]
 
 
-
+#%%
+dfOriginalData.head(5)
 
 
 #%%
@@ -178,4 +180,45 @@ plt.show()
 
 
 
+#%%
 
+#Lou's EDA
+
+dfOriginalData.describe()
+
+
+# %%
+num_bins = 10
+plt.hist(dfOriginalData['age'], num_bins, normed=1, facecolor='blue', alpha=0.5)
+plt.show()
+#Age is evenly distributed.  Mean is 44 yrs
+
+# %%
+# Distribution graphs (histogram/bar graph) of column data
+def plotPerColumnDistribution(df, nGraphShown, nGraphPerRow):
+    nunique = df.nunique()
+    df = df[[col for col in df if nunique[col] > 1 and nunique[col] < 50]] # For displaying purposes, pick columns that have between 1 and 50 unique values
+    nRow, nCol = df.shape
+    columnNames = list(df)
+    nGraphRow = (nCol + nGraphPerRow - 1) / nGraphPerRow
+    plt.figure(num = None, figsize = (6 * nGraphPerRow, 8 * nGraphRow), dpi = 80, facecolor = 'w', edgecolor = 'k')
+    for i in range(min(nCol, nGraphShown)):
+        plt.subplot(nGraphRow, nGraphPerRow, i + 1)
+        columnDf = df.iloc[:, i]
+        if (not np.issubdtype(type(columnDf.iloc[0]), np.number)):
+            valueCounts = columnDf.value_counts()
+            valueCounts.plot.bar()
+        else:
+            columnDf.hist()
+        plt.ylabel('counts')
+        plt.xticks(rotation = 90)
+        plt.title(f'{columnNames[i]} (column {i})')
+    plt.tight_layout(pad = 1.0, w_pad = 1.0, h_pad = 1.0)
+    plt.show()
+
+# %%
+plotPerColumnDistribution(dfOriginalData, 10, 5)
+
+#more male than female.  # heavily celtic english
+
+# %%
