@@ -27,7 +27,7 @@ dfOriginalData.drop_duplicates(subset =["avg_n_pos_per_prev_tenure", "avg_pos_le
 dfOriginalData.shape
 
 #%%
-# remove usless columns
+# remove useless columns
 dfOriginalData.drop(["beauty","beauty_female","beauty_male","blur","blur_gaussian","blur_motion","emo_anger","emo_disgust","emo_fear","emo_happiness","emo_neutral","emo_sadness","emo_surprise","ethnicity","face_quality","glass","head_pitch","head_roll","head_yaw","img","mouth_close","mouth_mask","mouth_open","mouth_other","skin_acne","skin_dark_circle","skin_health","skin_stain"], axis =1,inplace =True)
 dfOriginalData.shape
 
@@ -504,10 +504,16 @@ dfOriginalData.describe()
 
 
 # %%
-num_bins = 10
-plt.hist(dfOriginalData['age'], num_bins, normed=1, facecolor='blue', alpha=0.5)
+num_bins = 20
+plt.hist(dfOriginalData['age'], num_bins, facecolor='blue', alpha=1)
+plt.xlabel('Age of Employee')
+plt.ylabel('Frequency')
 plt.show()
 #Age is evenly distributed.  Mean is 44 yrs
+#%%
+import seaborn as sns
+sns.set()
+sns.distplot(dfOriginalData['age'],kde = False)
 
 # %%
 # Distribution graphs (histogram/bar graph) of column data
@@ -533,10 +539,16 @@ def plotPerColumnDistribution(df, nGraphShown, nGraphPerRow):
     plt.show()
 
 # %%
-plotPerColumnDistribution(dfOriginalData, 10, 5)
+plotPerColumnDistribution(dfOriginalData, 5, 5)
 
 #more male than female.  # heavily celtic english
 
+#%%
+# bar the nationality in general 
+my_tab = pd.crosstab(index = dfOriginalData["nationality"],  # Make a crosstab
+                              columns="count")      # Name the count column
+
+my_tab.plot.bar()
 # %%
 #avg age for the ethnic groups
 #nunique - sum values per Gender and Type groups
@@ -558,6 +570,6 @@ plt.legend()
 #nationality by avg age
 import seaborn as sns
 sns.set()
-
+avgage = sns.barplot(x="age", y="nationality", hue="gender", data=avg_age)
 
 # %%
