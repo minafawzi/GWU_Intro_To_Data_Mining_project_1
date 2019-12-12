@@ -1,16 +1,27 @@
 
+#%% [markdown]
+#  The following code goes thru analysis of the linkedin data
+#
+# # Pre-processing and data cleaning
+# - First we load the data
+# - Clean the data from duplicates
+# - Drop unncessary columns that will not be used for the analysis 
+# - Create visuals to understand the data dimensions and various features
+
 #%%
 
 #Import the necessary packages and load the dataset
+# using the Latin1 encoding to process some special characters in the company names
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+
 filePath = "C:\\Users\\HP ELITEBOOK\\Documents\\dataming\\GWU_Intro_To_Data_Mining_project_1\\Linkedin_Data.csv"
 dfOriginalData = pd.read_csv(filePath,encoding='latin1')
 dfOriginalData.shape
 
 #%%
-
 # remove duplicates
 dfOriginalData.drop_duplicates(subset =["avg_n_pos_per_prev_tenure", "avg_pos_len","m_urn","age"], keep = 'first', inplace = True) 
 dfOriginalData.shape
@@ -50,12 +61,26 @@ plt.xlabel('Age')
 plt.show()
 
 #%%
+#%% [markdown]
+#  The following code is peforming the linkedIn API connection
+#  the API is to be installed first using: pip install linkedin-api
+#  information about the wrapper is here: https://pypi.org/project/linkedin-api/
 
+# # LinkedIn API connection 
+# - Load the package
+# - Initantiate the object with the credentials
+# - Create a list of unique company names
+# - Convert the company name to the searachable format (i.e. replace spaces with dash)
+# - Ping the API for each company name to retrieve the industry 
+# - If industry is Nan then we will try to other naming combination that might match the searchable pattern
+
+#%%
 # the below code connects to the LinkedIn API and iterate thru the unique company name lists
 # the code will then populate the company industry dataframe that contains only three columns: 
 # 1- companyName : actual name in the dataset
 # 2- companyNameLinkedin: name used to search the linkedin 
 # 3- companyIndustry: industry retrieved from the API
+
 
 # After doing basic string functions, the code invokes tryCompanyIndustry that will try various options and handles 
 # the exception in the API call
@@ -64,8 +89,11 @@ from linkedin_api import Linkedin
 linkedin = Linkedin("minafawzi.us@gmail.com", "GWU@123$$")
 
 #try for 50 before full 
-companyData = dfOriginalData["c_name"].head(50).unique()
-#companyData = dfOriginalData["c_name"].unique()
+# There was some performance issues we discovered with this functions
+# so we split the processing to chunks of 500 or more records per connection then we renew the connection
+#companyData = dfOriginalData["c_name"].head(50).unique()
+companyData = dfOriginalData["c_name"].unique()[1600:1900]
+companyData = companyData [~pd.isnull(companyData)]
 companyNameList = []
 companyIndustriesList = []
 companyNameLinkedinList = []
@@ -88,15 +116,27 @@ for i in companyData:
     companyNameLinkedinList.append(companyNameLinkedin)
 
 print("**********Done**************")
-# %%
-# this function calls the getCompanyIndustry function and if the return is Nan then it tries 2 more variation of the name
-# the variations were analyzed with some try an error and manual search in linkedin to see how it is made
 
+#%%
+# once we capture company functions we save them in various csv files that then will be combined to have a master
+# mapping document
+Temp = {"CompanyName":companyNameList,"companyNameLinkedin":companyNameLinkedinList,"companyIndustries":companyIndustriesList}
+DFTemp = pd.DataFrame(Temp)
+DFTemp.to_csv("1400_1600.csv")
+# %%
 # the first try is to see if the company name contains any digits, this is where the space or dash after the digits
 # will be deteted and then we re-call the API to see if it is working
 
 # the second try is to see if the first name in the company name to be used alone, i.e. Microsoft India might now work but 
 # Microsoft only will work
+  """
+  this function calls the getCompanyIndustry function and if the return is Nan then it tries 2 more variation of the name
+  the variations were analyzed with some try an error and manual search in linkedin to see how it is made
+  
+  :param linkedinObj: this is the LinkedIn API object that contains the loogging credentials
+  :param string companyName: the company industry that was returned from the API 
+  :return: company industry 
+  """
 
 from linkedin_api import Linkedin
 def tryCompanyIndustry(linkedinObj, companyName):
@@ -105,7 +145,7 @@ def tryCompanyIndustry(linkedinObj, companyName):
         print(companyName, "   Has numbers..")
         if(companyName.find("0-")!=-1):
             print("Found 0-")
-            companyNamecompanyName.replace("0-","0")
+            companyName = companyName.replace("0-","0")
             industry = getCompanyIndustry(linkedinObj,companyName)
         if(companyName.find("1-")!=-1):
             print("Found 1-")
@@ -150,7 +190,14 @@ def tryCompanyIndustry(linkedinObj, companyName):
     
 
 #%%
-# Handy function to see if there is any digits in the string
+
+  """
+  Checks if there is any digits in a string
+  
+  :param string inputString: input string to be checked
+  :return: bool  
+  """
+
 def hasNumbers(inputString):
 ...     return any(char.isdigit() for char in inputString)
 
@@ -159,6 +206,13 @@ def hasNumbers(inputString):
 
 # the actuak function doing the API call
 # return JSON (if not nan) will then be searched for the specific location where indutsry is mentioned
+  """
+  This is the actual function that conduct the API call
+  
+  :param linkedinObj: this is the LinkedIn API object that contains the loogging credentials
+  :param string companyName: the company industry that was returned from the API 
+  :return: company industry 
+  """
 from linkedin_api import Linkedin
 def getCompanyIndustry(linkedinObj, companyName):
     
@@ -171,6 +225,135 @@ def getCompanyIndustry(linkedinObj, companyName):
 #%%
 dfOriginalData.head(5)
 
+# %%[markdown]
+## company industries
+# based on the industries table we will trim them down to one of the following industry super groups:
+#- "Computer, Telecom and IT"
+#"- Financial Services and Banking"  
+#- "Online Media","Writing & Editing"
+#- "Enegry and Chemicals"
+#- "Gov, Law and NGOs"
+#- "Retail"
+#- "Medical Services"
+#- "Aviation, Defense and Maritime"
+#- "Consulting and outsourcing"
+#- "Education"
+#- "Manufacturing"
+#- "Toursim, hotels and restaurants"
+#- "Food & Beverages"
+#- "Logistics and Transportation"
+
+# all other industries will be referred to as "Other"
+#%%
+filePath = "C:\\Users\\malakm\\Documents\\Gwu\\DataMining Intro\\Project 1\\All_CompanyIndustries.csv"
+companyIndustriesData = pd.read_csv(filePath,encoding='latin1')
+companyIndustriesData.shape
+#uniqueIndustries = companyIndustriesData["companyIndustries"].unique()
+
+companyIndustriesData["companyIndustries"].replace(["Internet","Computer Software","Computer Hardware","Computer Networking","Computer & Network Security","Information Technology & Services","Information Services","Computer Software","Computer Games","Consumer Electronics","Telecommunications","Wireless","Information","Semiconductors"], "Computer, Telecom and IT", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Banking","Financial Services","Accounting","Investment Management","Insurance","Venture Capital & Private Equity","Capital Markets","Investment Banking"], "Financial Services and Banking", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Printing","Broadcast Media","Publishing","Photography","Media Production","Newspapers","Graphic Design","Entertainment","Music","Motion Pictures & Film","Animation","Translation & Localization","Online Media","Writing & Editing"], "Media", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Renewables & Environment","Chemicals","Oil & Energy","Mining & Metals"], "Enegry and Chemicals", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Environmental Services","Legal Services","Non-profit Organization Management","Security & Investigations","Law Practice","Philanthropy","Government Administration","Civic & Social Organization","Public Safety","Public Policy","Government Relations","Political Organization","International Affairs","Judiciary","International Trade & Development","Law Enforcement"], "Gov, Law and NGOs", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Consumer Services","Business Supplies & Equipment","Wholesale","Luxury Goods & Jewelry","Retail","Consumer Goods","Cosmetics","Wine & Spirits","Consumer Services","Apparel & Fashion","Furniture","Sporting Goods","Individual & Family Services","Tobacco"], "Retail", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Hospital & Health Care","Pharmaceuticals","Medical Device","Medical Practice","Mental Health Care","Biotechnology"], "Medical Services", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Aviation & Aerospace","Airlines/Aviation","Defense & Space","Maritime"], "Aviation, Defense and Maritime", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Program Development","Design","Outsourcing/Offshoring","Executive Office","Market Research","Management Consulting","Marketing & Advertising","Staffing & Recruiting","Human Resources","Architecture & Planning","Think Tanks"], "Consulting and outsourcing", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Higher Education","Primary/Secondary Education","Education Management","Research","E-learning","Professional Training & Coaching"], "Education", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Gambling & Casinos","Hospitality","Restaurants","Leisure, Travel & Tourism"], "Toursim, hotels and restaurants", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Construction","Building Materials","Mechanical Or Industrial Engineering","Machinery","Civil Engineering","Electrical & Electronic Manufacturing","Automotive","Industrial Automation"], "Manufacturing", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Dairy","Food Production","Farming","Food & Beverages"], "Food & Beverages", inplace=True)  
+companyIndustriesData["companyIndustries"].replace(["Package/Freight Delivery","Logistics & Supply Chain","Transportation/Trucking/Railroad","Packaging & Containers"], "Logistics and Transportation", inplace=True)  
+
+for ind in companyIndustriesData.index:
+    temp = companyIndustriesData["companyIndustries"][ind]
+    print (ind)
+    if(temp =="Computer, Telecom and IT"):
+        #print("match ","Computer, Telecom and IT" )
+        continue
+    elif(temp =="Financial Services and Banking"):
+        #print("match ","Finance" )
+        continue
+    elif(temp =="Online Media Writing & Editing"):
+        #print("match ","Media" )
+        continue
+    elif(temp =="Enegry and Chemicals"):
+        #print("match ","Energy" )
+        continue
+    elif(temp =="Gov, Law and NGOs"):
+        #print("match ","Gov" )
+        continue
+    elif(temp =="Retail"):
+        #print("match ","Retail" )
+        continue
+    elif(temp =="Medical Services"):
+        #print("match ","Medical" )
+        continue
+    elif(temp=="Aviation, Defense and Maritime"):
+        #print("match ","Aviation" )
+        continue
+    elif(temp =="Consulting and outsourcing"):
+        #print("match ","Consult" )
+        continue
+    elif(temp =="Education"):
+        #print("match ","Edu" )
+        continue
+    elif(temp =="Manufacturing"):
+        #print("match ","Manufacturing" )
+        continue
+    elif(temp=="Toursim, hotels and restaurants"):
+        #print("match ","Toursim" )
+        continue
+    elif(temp =="Food & Beverages"):
+        #print("match ","Food" )
+        continue
+    elif(temp =="Logistics and Transportation"):
+        #print("match ","Logistics" )
+        continue
+    else:
+        #print("NO NO NNO match ","Logistics" )
+        companyIndustriesData["companyIndustries"][ind] = "Other"
+        continue
+
+# %%
+# return the industry lookup from the Dataframe holding company industry per company name
+"""
+  :param companyIndustriesData: the dataframe for the company industry
+  :param string companyName: the company name to be used in the lookup 
+  :return: company industry from the dataframe
+ """
+def CompanyIndustryLookup(companyIndustriesData, companyName):
+    found =0
+    for index, i in companyIndustriesData.iterrows():
+        if(i["CompanyName"] ==companyName ):
+            found =1
+            #print("Found ->",companyName )
+            #print(i["companyIndustries"])
+            return i["companyIndustries"]
+    if(found == 0):
+        return "Nan"
+
+#%%
+#companyIndustriesData.to_csv("companyIndustriesData.csv")
+# must run the CompanyIndustryLookup() function first
+# this will populate the industry inside the original dataframe
+for index, row in dfOriginalData.head(12000).iterrows():
+    dfOriginalData.set_value (index,"Industry",CompanyIndustryLookup(companyIndustriesData,row["c_name"]))
+
+print("************Done*************")     
+#%%
+#now we have the original Dataset with a newly added column called Industry
+# we will first drop all empty rows where industry was not populated
+dfOriginalData2 = dfOriginalData
+dfOriginalData2 = dfOriginalData2[dfOriginalData2["Industry"]!="Nan"]
+dfOriginalData2 = dfOriginalData2[pd.notnull(dfOriginalData2["Industry"])]
+dfOriginalData2.shape
+
+# then we conduct various analysis grouped by the industry 
+
+test1 = dfOriginalData2["age"].groupby(dfOriginalData2["Industry"])
+#test1.mean().plot.bar()
+test1.count().plot.bar()
 
 #%%
 
