@@ -573,3 +573,35 @@ sns.set()
 avgage = sns.barplot(x="age", y="nationality", hue="gender", data=avg_age)
 
 # %%
+#%%
+
+## correlation and heatmap
+# reload the original data again but without dropping the headshot columns to analyze smiling
+
+from __future__ import print_function
+%matplotlib inline
+import matplotlib.pyplot as plt
+import scipy
+import os
+import sys
+
+filePath = "C:\\Users\\HP ELITEBOOK\\Documents\\dataming\\GWU_Intro_To_Data_Mining_project_1\\Linkedin_Data.csv"
+dfOriginalData = pd.read_csv(filePath,encoding='latin1')
+dfOriginalData.shape
+
+#%%
+
+df = dfOriginalData[['age','ethnicity','gender','mouth_close','smile','n_followers']]
+#%%
+df.corr(method='kendall')
+
+#%%
+plt.figure(figsize=(7,7))
+seaborn.heatmap(df.corr(), annot=True, cmap= 'coolwarm')
+
+#%%
+
+df_pairplot = df.dropna()
+seaborn.pairplot(df_pairplot, height=1.5)
+
+#%%
